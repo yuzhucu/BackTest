@@ -1,0 +1,2 @@
+EVENT_NEWDATA= 'New_Data'
+EVENT_NEWORDER='New_Order'
