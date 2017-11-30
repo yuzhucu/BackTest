@@ -1,31 +1,43 @@
 # encoing=utf8
-from pymongo import MongoClient, ASCENDING
-from pymongo.errors import ConnectionFailure
-import datetime
-
+from EventEngine.EventEngine import Event
+from EventEngine.EventType import EVENT_CLOSEORDER,EVENT_MODIFYORDER,EVENT_NEWORDER
+from DataHandler.MongoHandler import MongoHandler
 
 class BaseStrategy(object):
-    def __init__(self):
-        self.db=None
+    def __init__(self, eventEngine):
+        self.__eventEngine = eventEngine
+        self.__eventEngine.AddEventListener(type_=EVENT_NEWORDER, handler=self.SendOrder)
+        self.__eventEngine.AddEventListener(type_=EVENT_CLOSEORDER, handler=self.CloseOrder)
+        self.__eventEngine.AddEventListener(type_=EVENT_MODIFYORDER, handler=self.ModifyOrder)
+    def GetNewData(self, data=None):
+        """
 
-    def dbConnect(self):
-        if not self.db:
-            try:
-                self.db=MongoClient('127.0.0.1',27017)[str(self.__magic)]
-            except ConnectionFailure:
-                print "error when connecting to mongodb"
-                pass
+        :param data:
+        :return:
+        """
+        self.SendBuyOrder(dataslice=data)
+        self.SendSellOrder(dataslice=data)
+        self.ModifyOrder(ticket=None, dataslice=data)
+        self.CloseOrder(ticket=None, dataslice=data)
 
-    def SendBuyOrder(self):
-        return False
+    def SendOrder(self, event):
+        magic=event.dict['magic']
+        mongo_handler=MongoHandler(magic)
+        mongo_handler.save_orderinfo(event.dict)
 
-    def SendSellOrder(self):
-        return False
+    def CloseOrder(self, ticket, dataslice=None):
+        res = False
+        orderinfo = {}
+        if res == True:
+            self.SendEvent(type=EVENT_CLOSEORDER, orderinfo=orderinfo)
 
-    def CloseOrder(self, ticket):
-        return True
+    def ModifyOrder(self, ticket, dataslice=None):
+        res = False
+        orderinfo = {}
+        if res == True:
+            self.SendEvent(type=EVENT_MODIFYORDER, orderinfo=orderinfo)
 
-    def ModifyOrder(self, ticket):
-        return True
-
-
+    def SendEvent(self, type=None, orderinfo=None):
+        OrderEvent = Event(type=type)
+        OrderEvent.dict = orderinfo
+        self.__eventEngine.SendEvent(OrderEvent)
