@@ -36,4 +36,5 @@ class Low(Indicator):
         Indicator.__init__(self, period, shift, dataslice)
 
     def get_Low(self):
-        return round(self.data['High'].min(), POINT)
+        return round(self.data['Low'].min(), POINT)
+
